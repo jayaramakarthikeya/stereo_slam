@@ -6,6 +6,9 @@
 
 #include "stereoslam/common_include.h"
 
+#include "stereoslam/mappoint.h"
+#include "stereoslam/frame.h"
+
 namespace stereoslam
 {
     struct Feature {

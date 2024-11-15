@@ -6,20 +6,7 @@
 
 #include "stereoslam/common_include.h"
 
-// for Sophus
-#include <sophus/se3.hpp>
-#include <sophus/so3.hpp>
-
-typedef Sophus::SE3d SE3;
-typedef Sophus::SO3d SO3;
-
-// for cv
-#include <opencv2/core/core.hpp>
-
-using cv::Mat;
-
-// glog
-#include <glog/logging.h>
+#include "stereoslam/feature.h"
 
 namespace stereoslam
 {

@@ -18,9 +18,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include "frame.h"
-#include "feature.h"
-
 // typedefs for eigen
 // double matricies
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> MatXX;
