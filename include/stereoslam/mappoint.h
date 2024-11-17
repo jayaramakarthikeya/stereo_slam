@@ -5,7 +5,7 @@
 #define MAPPOINT_H
 
 #include "stereoslam/common_include.h"
-
+#include "stereoslam/feature.h"
 #include <Eigen/Core>
 
 
