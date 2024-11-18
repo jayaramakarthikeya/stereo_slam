@@ -61,6 +61,10 @@ namespace stereoslam
 
         bool BuilInitMap();
 
+        void SetObservationsForKeyFrame();
+
+        int TriangulateNewPoints();
+
 
 
         Map::Ptr map_ = nullptr;
