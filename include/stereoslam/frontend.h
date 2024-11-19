@@ -10,6 +10,7 @@
 #include "stereoslam/frame.h"
 #include "stereoslam/map.h"
 #include "stereoslam/camera.h"
+#include "stereoslam/backend.h"
 
 namespace stereoslam
 {
@@ -74,6 +75,8 @@ namespace stereoslam
 
         Frame::Ptr current_frame_ = nullptr;
         Frame::Ptr last_frame_ = nullptr;
+
+        Backend::Ptr backend_ = nullptr;
 
         SE3 relative_motion_;
 

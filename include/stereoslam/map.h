@@ -23,6 +23,8 @@ namespace stereoslam{
 
         void InsertMapPoint(MapPoint::Ptr map_point);
 
+        void RemoveOldKeyFrames();
+
         LandmarkType GetAllMappoints() {
             std::unique_lock<std::mutex> lock(data_mutex_);
             return landmarks_;
