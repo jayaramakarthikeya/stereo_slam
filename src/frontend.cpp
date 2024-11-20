@@ -4,11 +4,15 @@
 #include "stereoslam/frontend.h"
 #include "stereoslam/algorithm.h"
 #include "stereoslam/g2o_types.h"
+#include "stereoslam/config.h"
 
 namespace stereoslam
 {
     FrontEnd::FrontEnd() {
-        gftt_ = cv::GFTTDetector::create(num_features_, 0.01, 20);
+        gftt_ =
+        cv::GFTTDetector::create(Config::Get<int>("num_features"), 0.01, 20);
+        num_features_init_ = Config::Get<int>("num_features_init");
+        num_features_ = Config::Get<int>("num_features");
 
     }
 
@@ -28,7 +32,7 @@ namespace stereoslam
             Reset();
             break;
         }
-
+        //LOG(INFO) << "Pose matrix:" << current_frame_->Pose().matrix();
         last_frame_ = current_frame_;
         return true;
     }
@@ -41,6 +45,10 @@ namespace stereoslam
         int num_track_last = TrackLastFrame();
         tracking_inliers_ = EstimateCurrentPose();
 
+        
+
+        std::cout << "tracking inliers: " << tracking_inliers_ << std::endl;
+
         if(tracking_inliers_ > num_features_tracking_) {
             status_ = FrontEndStatus::TRACKING_GOOD;
         }
@@ -48,12 +56,13 @@ namespace stereoslam
             status_ = FrontEndStatus::TRACKING_BAD;
         }
         else {
-            status_ = FrontEndStatus::LOST;
+            //status_ = FrontEndStatus::LOST;
         }
         
         InsertKeyFrame();   
         relative_motion_ = current_frame_->Pose() * last_frame_->Pose().inverse();
-
+        
+        if (viewer_) viewer_->AddCurrentFrame(current_frame_);
         return true;
     }
 
@@ -77,9 +86,9 @@ namespace stereoslam
         // triangulate map points
         TriangulateNewPoints();
         // update backend because we have a new keyframe
-        //backend_->UpdateMap();
+        backend_->UpdateMap();
 
-        //if (viewer_) viewer_->UpdateMap();
+        if (viewer_) viewer_->UpdateMap();
 
         return true;
     }
@@ -130,21 +139,26 @@ namespace stereoslam
 
     int FrontEnd::TrackLastFrame() {
         std::vector<cv::Point2f> points_left, points_right;
-        for(auto& kp: current_frame_->features_left_) {
-            points_left.push_back(kp->position_.pt);
+        for(auto& kp: last_frame_->features_left_) {
+            
             auto mp = kp->map_point_.lock();
             if(mp) {
-                Vec2 px = right_camera_->world2pixel(mp->pos_, current_frame_->Pose());
+                Vec2 px = left_camera_->world2pixel(mp->pos_, current_frame_->Pose());
                 points_right.push_back(cv::Point2f(px[0], px[1]));
+                points_left.push_back(kp->position_.pt);
             }
             else {
                 points_right.push_back(kp->position_.pt);
+                points_left.push_back(kp->position_.pt);
             }
         }
 
+        //std::cout << "points_left: " << points_left.size() << std::endl;
+        //cv::Mat prevPtsMat = cv::Mat(points_left).reshape(1).convertTo(prevPtsMat, CV_32F);
+
         std::vector<uchar> status;
-        cv::Mat error;
-        cv::calcOpticalFlowPyrLK(current_frame_->left_img_, current_frame_->right_img_, points_left, points_right, status, error,
+        std::vector<float> error;
+        cv::calcOpticalFlowPyrLK(last_frame_->left_img_, current_frame_->left_img_, points_left, points_right, status, error,
                 cv::Size(11,11), 3, cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01), cv::OPTFLOW_USE_INITIAL_FLOW);
 
         int cnt_detected = 0;
@@ -152,13 +166,14 @@ namespace stereoslam
             if(status[i]) {
                 cv::KeyPoint keypoint(points_right[i],7);
                 Feature::Ptr feature(new Feature(current_frame_, keypoint));
-                feature->is_on_left_ = false;
-                current_frame_->features_right_.push_back(feature);
+                feature->is_on_left_ = true;
+                feature->map_point_ = last_frame_->features_left_[i]->map_point_;
+                current_frame_->features_left_.push_back(feature);
                 cnt_detected++;
             }
-            else {
-                current_frame_->features_right_.push_back(nullptr);
-            }
+            // else {
+            //     current_frame_->features_right_.push_back(nullptr);
+            // }
         }
         LOG(INFO) << "Find " << cnt_detected << " features in right image";
         return cnt_detected;
@@ -235,7 +250,7 @@ namespace stereoslam
 
         LOG(INFO) << "Outliers in pose estimating is: " << cnt_outlier;
 
-        current_frame_->Pose() = vertex_pose->estimate();
+        current_frame_->SetPose(vertex_pose->estimate());
         
         for (auto &feat : tracked_features) {
             if (feat->is_outlier_) {
@@ -256,6 +271,10 @@ namespace stereoslam
         bool build_map_success = BuilInitMap();
         if(build_map_success) {
             status_ = FrontEndStatus::TRACKING_GOOD;
+            if (viewer_) {
+                viewer_->AddCurrentFrame(current_frame_);
+                viewer_->UpdateMap();
+            }
         }
         return build_map_success;
     }
@@ -312,7 +331,7 @@ namespace stereoslam
                 current_frame_->features_right_.push_back(nullptr);
             }
         }
-        LOG(INFO) << "Find " << cnt_detected << " features in right image";
+        LOG(INFO) << "Found " << cnt_detected << " features in right image";
         return cnt_detected;
         
     }
@@ -334,7 +353,7 @@ namespace stereoslam
 
 
             if(triangulation(poses, points, pworld) && pworld[2] > 0) {
-                MapPoint::Ptr map_point = MapPoint::CreateMapPoint();
+                auto map_point = MapPoint::CreateMapPoint();
                 map_point->SetPos(pworld);
                 map_point->AddObservation(current_frame_->features_left_[i]);
                 map_point->AddObservation(current_frame_->features_right_[i]);
@@ -344,9 +363,19 @@ namespace stereoslam
                 triangluated_points++;
             }
         }
+
+        current_frame_->SetKeyFrame();
+        map_->InsertKeyFrame(current_frame_);
+        backend_->UpdateMap();
         LOG(INFO) << "New Landmarks: " << triangluated_points ;
         return true;
     }
 
+    bool FrontEnd::Reset() {
+        LOG(INFO) << "Reset FrontEnd";
+
+       return true;
+        
+    }
 
 }

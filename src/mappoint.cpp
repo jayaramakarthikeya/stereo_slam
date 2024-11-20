@@ -6,7 +6,7 @@ namespace stereoslam {
 
     MapPoint::MapPoint(long id, Vec3 pos) : id_(id), pos_(pos) {}
 
-    static MapPoint::Ptr CreateMapPoint() {
+    MapPoint::Ptr MapPoint::CreateMapPoint() {
         static unsigned long factory_id = 0;
         MapPoint::Ptr new_map_point(new MapPoint);
         new_map_point->id_ = factory_id++;

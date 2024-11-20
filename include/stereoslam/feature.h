@@ -5,12 +5,14 @@
 #define FEATURE_H
 
 #include "stereoslam/common_include.h"
-
 #include "stereoslam/mappoint.h"
-#include "stereoslam/frame.h"
+
 
 namespace stereoslam
 {
+    struct Frame;
+
+    //struct MapPoint;
     struct Feature {
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW;

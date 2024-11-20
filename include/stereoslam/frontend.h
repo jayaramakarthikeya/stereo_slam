@@ -11,6 +11,7 @@
 #include "stereoslam/map.h"
 #include "stereoslam/camera.h"
 #include "stereoslam/backend.h"
+#include "stereoslam/viewer.h"
 
 namespace stereoslam
 {
@@ -35,6 +36,9 @@ namespace stereoslam
 
         void SetMap(Map::Ptr map) { map_ = map; }   
 
+        void SetBackend(std::shared_ptr<Backend> backend) { backend_ = backend; }
+
+        void SetViewer(std::shared_ptr<Viewer> viewer) { viewer_ = viewer; }
 
         FrontEndStatus GetStatus() const { return status_; }
 
@@ -77,6 +81,7 @@ namespace stereoslam
         Frame::Ptr last_frame_ = nullptr;
 
         Backend::Ptr backend_ = nullptr;
+        Viewer::Ptr viewer_ = nullptr;
 
         SE3 relative_motion_;
 
