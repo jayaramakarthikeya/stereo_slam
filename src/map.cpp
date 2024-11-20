@@ -6,15 +6,15 @@ namespace stereoslam {
 
     void Map::InsertKeyFrame(Frame::Ptr frame) {
         current_keyframe_ = frame;
-        if(keyframes_.find(frame->id_) == keyframes_.end()) {
-            keyframes_[frame->id_] = frame;
-            active_keyframes_[frame->id_] = frame;
+        if (keyframes_.find(frame->keyframe_id_) == keyframes_.end()) {
+            keyframes_.insert(make_pair(frame->keyframe_id_, frame));
+            active_keyframes_.insert(make_pair(frame->keyframe_id_, frame));
         } else {
-            keyframes_[frame->id_] = frame;
-            active_keyframes_[frame->id_] = frame;
+            keyframes_[frame->keyframe_id_] = frame;
+            active_keyframes_[frame->keyframe_id_] = frame;
         }
 
-        if(active_keyframes_.size() > num_active_keyframes) {
+        if (active_keyframes_.size() > num_active_keyframes) {
             RemoveOldKeyFrames();
         }
     }
@@ -32,6 +32,7 @@ namespace stereoslam {
         auto Twc = current_keyframe_->Pose().inverse();
 
         for(auto iter = active_keyframes_.begin(); iter != active_keyframes_.end(); iter++) {
+            if(iter->second == current_keyframe_) continue;
             double dis = (iter->second->Pose() * Twc).log().norm();
             if(dis > max_dis) {
                 max_dis = dis;
@@ -52,7 +53,7 @@ namespace stereoslam {
             frame_to_remove = active_keyframes_.at(max_kf_id);
         }
 
-        active_keyframes_.erase(frame_to_remove->id_);
+        active_keyframes_.erase(frame_to_remove->keyframe_id_);
 
         for(auto feat: frame_to_remove->features_left_) {
             auto mp = feat->map_point_.lock();
@@ -60,6 +61,7 @@ namespace stereoslam {
         }
 
         for(auto feat: frame_to_remove->features_right_) {
+            if(feat == nullptr) continue;
             auto mp = feat->map_point_.lock();
             if (mp) mp->RemoveObservation(feat);
         }
@@ -72,7 +74,7 @@ namespace stereoslam {
 
         for(auto iter = active_landmarks_.begin(); iter != active_landmarks_.end(); ) { 
             if(iter->second->observed_times_ == 0) {
-                active_landmarks_.erase(iter);
+                iter = active_landmarks_.erase(iter);
                 cnt_landmarks_removed++;
             } else {
                 iter++;

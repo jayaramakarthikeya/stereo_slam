@@ -20,6 +20,7 @@ namespace stereoslam {
             if(observation->lock() == feature) {
                 observations_.erase(observation);
                 feature->map_point_.reset();
+                observed_times_--;
                 break;
             }
         }

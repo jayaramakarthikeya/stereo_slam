@@ -56,7 +56,7 @@ namespace stereoslam
             status_ = FrontEndStatus::TRACKING_BAD;
         }
         else {
-            //status_ = FrontEndStatus::LOST;
+            status_ = FrontEndStatus::LOST;
         }
         
         InsertKeyFrame();   
@@ -202,7 +202,7 @@ namespace stereoslam
         int index = 1;
         std::vector<EdgeProjectionPoseOnly*> edges;
         std::vector<Feature::Ptr> tracked_features;
-        for (auto &feature: current_frame_->features_left_) {
+        for (auto feature: current_frame_->features_left_) {
             auto mp = feature->map_point_.lock();
             if(mp) {
                 tracked_features.push_back(feature);
@@ -374,7 +374,7 @@ namespace stereoslam
     bool FrontEnd::Reset() {
         LOG(INFO) << "Reset FrontEnd";
 
-       return true;
+        return true;
         
     }
 

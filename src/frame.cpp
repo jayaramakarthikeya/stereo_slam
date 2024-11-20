@@ -15,7 +15,8 @@ namespace stereoslam {
     }
 
     void Frame::SetKeyFrame() {
-        unsigned long keyframe_factory_id = 0;
+        //remember to put static 
+        static unsigned long keyframe_factory_id = 0;
         is_keyframe_ = true;
         keyframe_id_ = keyframe_factory_id++;
     }
